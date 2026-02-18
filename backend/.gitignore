@@ -1,0 +1,24 @@
+.env
+.venv
+__pycache__/
+*.pyc
+
+
+# Ignore actual database files
+*.sqlite3
+*.db
+*.mdf
+*.ldf
+
+# Ignore session files and temporary caches
+sessions/
+.cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+.env
+.venv
+env/
+venv/
+ENV/
