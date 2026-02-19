@@ -1,0 +1,7 @@
+pydantic_settings
+fastapi
+uvicorn
+python-jose[cryptography]
+passlib[context]
+passlib
+sqlalchemy
