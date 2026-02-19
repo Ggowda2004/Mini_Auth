@@ -1,0 +1,62 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.db.models.api_keys import APIKey
+    from app.db.models.audit_log import AuditLogs
+"""this is to avoid circular imports. If we import APIKey at the top, it will also try to import
+User, which will lead to an infinite loop. By using TYPE_CHECKING, we can tell the type checker to
+ignore this import at runtime, but still allow us to use APIKey in our type hints"""
+
+#Column (Legacy): The old way (1.x). It doesn't understand Python type hints. Your IDE won't know if user.id is an integer or a string unless you tell it twice.
+#mapped_column (Modern): The new way (2.0+). It is designed to work with the Mapped[] type hint. It "reads" the Python type and automatically configures the database column for you.
+class User(Base):
+
+# id: Mapped[uuid.UUID] ensures type safety in Python
+ you write default=datetime.now(timezone.utc), Python executes that function once when your app starts. Every single row created after that will have the exact same timestamp—the time the server turned on. 
+By using default=lambda: datetime.now(timezone.utc), you are passing a callable. SQLAlchemy will run that function fresh every time a new row is inserted, ensuring each row gets its own unique "now".
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    
+    is_active BOOLEAN DEFAULT TRUE,
+    is_superuser BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
+"""uuid4 Completely random number
+No relation to input data
+Collision chance extremely low
+auto_increment in simple not scalable for mutilple servers or table(conflict)
+uuid is random min conflict ex:128 bits = 16 bytes = 32 hexadecimal characters550e8400-e29b-41d4-a716-446655440000"""
+
+CREATE TABLE api_keys 
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    name VARCHAR(100) NOT NULL,
+    key_hash TEXT NOT NULL,
+
+    revoked BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_used_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+
+    event_type VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45),
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

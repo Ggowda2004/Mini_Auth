@@ -1,0 +1,41 @@
+config
+#central place for all app settings
+'''
+Things that change per environment:
+DATABASE_URL
+SECRET_KEY
+TOKEN_EXPIRY_MINUTES
+
+
+JWT algorithm
+token expiry
+
+
+App constants
+Anything global:
+project name
+API prefix
+debug mode
+'''
+we have used settings to make ease the use of env, by using modern feature for data validation, and simple import
+# important -> In your current code, jwt_secret_key will not automatically find JWT_SECRET_KEY unless they are almost identical in name. Pydantic's default matching is case-insensitive, but it cannot guess "shorthand" or entirely different names.
+#if we have differnet names, we can use-> jwt_secret_key: str | None = Field(None, validation_alias="SECRET_KEY_FOR_JWT")
+
+security
+#security → no FastAPI dependency so no error raised, rather we define custom error and define custom functions to handle security related tasks in middleware and routers
+"""first user logs in, immediatley the server starts working on generating the token 
+1-> gathers required payload (all minimal data ->user id, role, expiry)
+2-> header is prepared by server based on the hasing used(by server)
+3-> both payload and header are encoded and joinned using a dot(by server)
+4-> a secret key is used and a choosen algorithm is performed to finally add a signature(before) structure qqqqqqqqq.ddddddddd.rrrrrrrrrr"""
+'''
+CREATE TOKEN
+→ encode(payload + secret)
+
+VERIFY TOKEN
+→ decode(token + same secret)
+→ if valid → get payload
+'''
+
+Exception
+#Raised and used when there is an authentication error. this is used because core, cannot be dependent on other files hence must not imprort from other files to handel this exception

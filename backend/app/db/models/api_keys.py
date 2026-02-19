@@ -62,17 +62,3 @@ class APIKey(Base):
     back_populates="api_key",
     cascade="all, delete-orphan"
     )
-
-# CREATE TABLE api_keys 
-#     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-#     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-#     name VARCHAR(100) NOT NULL,
-#     key_hash TEXT NOT NULL,
-
-#     revoked BOOLEAN DEFAULT FALSE,
-
-#     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-#     last_used_at TIMESTAMP WITH TIME ZONE
-# )
