@@ -14,5 +14,3 @@ def get_db()->Generator:
         yield db
     finally:
         db.close()
-
-#we have give url,create engine,sessionmaker and get_db function to get the db session for our application.

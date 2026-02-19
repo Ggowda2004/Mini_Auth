@@ -1,0 +1,12 @@
+base.py
+#Import all models here so Alembic can discover them, otherwise, it won't be able to generate migrations for them.
+#check out alembic***
+#Importing models into a central base file ensures your entire application uses a single shared Base instance
+importing all models to base, helps with alembic
+***The from app.db.models.user import User lines you wrote are exactly what allow Alembic's autogenerate feature to work. 
+Without those imports: Alembic sees an empty Base.metadata and will try to delete all your tables because it thinks they shouldn't exist.
+
+
+session.py
+we have give url,create engine(->connects to db),sessionmaker(used to create new session objects)
+get_db function to get the db session for our application.

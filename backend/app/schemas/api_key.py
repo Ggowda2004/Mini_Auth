@@ -9,4 +9,3 @@ class MakeAPIKey(BaseModel):
         if not re.fullmatch(r"[\w -]+", n):
             raise ValueError("Name can only contain letters, numbers, spaces, hyphens, and underscores")
         return n
-#used regex syntax or regular expression

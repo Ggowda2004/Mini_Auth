@@ -1,0 +1,6 @@
+#used regex syntax or regular expression
+r"[\w -]+"
+
+in schemas we do not raise httpexception error, rather just a valueerror
+Pydantic is a data validation library, not a web framework. It is designed to be "unaware" of HTTP status codes
+FastAPI Integration: FastAPI then automatically catches that ValidationError and converts it into a 422 Unprocessable Entity response for the client, including a clear message about which field failed.
