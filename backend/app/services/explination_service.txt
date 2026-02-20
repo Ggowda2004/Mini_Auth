@@ -1,0 +1,71 @@
+Service layer = where your business logic lives.
+
+Spot on. Passing the session as an argument is the standard "Dependency Injection" pattern recommended by FastAPI's SQL Database documentation. It keeps your service stateless and makes unit testing a breeze since you can easily swap the real DB for a mock
+auth_service.py
+-> Handles:
+register user   ✅
+1️⃣ Validate input (schema already did basic validation) ---
+2️⃣ Check if email already exists in DB ---
+   → if yes → error ---
+3️⃣ Hash password ---
+4️⃣ Create user object ---
+5️⃣ Save to databasev ---
+6️⃣ (Optional but good) log audit event
+7️⃣ Return created user (or success response) ---
+
+
+login user  ✅
+1️⃣ Validate input (schema handles format)
+2️⃣ Find user by email
+   → if not found → error
+3️⃣ Verify password
+   → compare plain password with stored hash
+   → if mismatch → error
+4️⃣ Check user status (is_active)
+   → if inactive → reject
+5️⃣ Generate JWT token
+6️⃣ (Optional) log login evenn7️⃣ Return token  
+
+verify credentials ✅
+create JWT         ✅
+get current user   ✅
+Responsibilities:  ✅
+validate email uniqueness ✅
+hash password      ✅
+store user         ✅
+verify password    ✅
+generate token ->This is your main service. ✅
+
+                Return structured response
+                Instead of raw token:
+                {"access_token": token, "token_type": "bearer"}
+                Standard API practice.
+✅✅✅types of token : access_token, refresh_token, jwt_token, api_key, session_token
+
+✅ 2️⃣ api_key_service.py
+Handles:
+generate API key
+hash API key
+store key
+revoke key
+validate key
+check expiry
+->    Flow example:
+generate random key
+hash it
+store hash
+return raw key once
+
+✅ 3️⃣ audit_service.py (simple helper)
+Handles:
+log login event
+log key usage
+log registration Just writes to DB.
+
+
+
+User sends JSON to the Route.
+Route validates the JSON into a Pydantic Model.
+Route gets a DB Session from a dependency.
+Route "calls" (invokes) the Service, handing it the model and the session.
+Service writes to the DB and returns the result to the Route.

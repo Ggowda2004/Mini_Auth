@@ -6,10 +6,10 @@ from app.core.config import Settings
 db_url=Settings.database_url
 
 engine = create_engine(db_url)
-sessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
+SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
 
 def get_db()->Generator:
-    db=sessionLocal
+    db=SessionLocal
     try:
         yield db
     finally:
