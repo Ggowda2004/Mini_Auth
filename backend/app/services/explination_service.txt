@@ -44,9 +44,9 @@ generate token ->This is your main service. ✅
 
 ✅ 2️⃣ api_key_service.py
 Handles:
-generate API key
-hash API key
-store key
+generate API key ✅
+hash API key     ✅
+store key        ✅
 revoke key
 validate key
 check expiry
@@ -55,6 +55,7 @@ generate random key
 hash it
 store hash
 return raw key once
+raise e (Loses the "Crime Scene") and raise (Preserves the "History")
 
 ✅ 3️⃣ audit_service.py (simple helper)
 Handles:

@@ -3,8 +3,8 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
 from app.core.exceptions import AuthError
-from .config import Settings
-
+from .config import settings
+import hashlib
 
 #1 task to hash and verify password
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated='auto')
@@ -17,17 +17,17 @@ def verify_password(plain_password:str, hash_pass:str):
 # verify_password()
 
 #2 create tokens
-ALGORITHM=Settings.jwt_algorithm
+ALGORITHM=settings.jwt_algorithm
 
 def create_access_token(data:dict):
     to_encode=data.copy()
-    expiry=datetime.now(timezone.utc) + timedelta(minutes=Settings.access_token_expiry_minutes)
+    expiry=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expiry_minutes)
     to_encode.update({"exp":expiry})
-    return jwt.encode(payload=to_encode,key=Settings.jwt_secret_key,algorithm=ALGORITHM)
+    return jwt.encode(payload=to_encode,key=settings.jwt_secret_key,algorithm=ALGORITHM)
 
 def verify_access_token(token):
     try:
-        payload=jwt.decode(token,key=Settings.jwt_secret_key,algorithms=[ALGORITHM])
+        payload=jwt.decode(token,key=settings.jwt_secret_key,algorithms=[ALGORITHM])
         return payload#decode automatically verifies expiry time
     except ExpiredSignatureError:
         raise  AuthError("The token is expired")
@@ -37,12 +37,12 @@ def verify_access_token(token):
 # create_access_token()
 # verify_access_token()
 
-api_key_context=CryptContext(schemes=["bcrypt"],deprecated="auto")
-def hash_api_key(api_key:str):
-    return api_key_context.hash(api_key)
-def verify_api_key(api_key:str,hash_key:str):
-    return api_key_context.verify(api_key,hash_key)
-
+def hash_api_key(raw_key:str)->str:
+    return hashlib.sha256(raw_key.encode()).hexdigest()
+"""
+    Hashes a raw API key using SHA-256. 
+    Deterministic: Same input always results in the same output.
+"""
 
 # hash_api_key()
 # verify_api_key()

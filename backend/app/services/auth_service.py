@@ -3,7 +3,7 @@ from app.schemas.login_user import LoginUser
 from app.core.exceptions import AuthError
 from app.db.models.user import User
 from sqlalchemy.orm import Session
-from app.core.secuirity import hash_password, verify_password, create_access_token
+from backend.app.core.security import hash_password, verify_password, create_access_token
 
 def auth_service_register_user(db:Session,user_data:CreateUser):
     email = user_data.email
@@ -22,8 +22,9 @@ def auth_service_register_user(db:Session,user_data:CreateUser):
     try:
         db.add(new_user)   #→ put in session (not saved)
         db.commit()         #→ write to database
-    except Exception as e:
+    except Exception:
         db.rollback()
+        raise
 
     db.refresh(new_user)    #→ get DB-generated values (id, timestamps)
     return new_user
