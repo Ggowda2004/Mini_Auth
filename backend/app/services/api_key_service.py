@@ -63,7 +63,7 @@ def validate_api_key(db:Session,raw_key:str):
     if not raw_key.startswith("sk_live_"):
         raise AuthError("Invalid Key or No key match found") #Invalid Key"
     hashed_key=hash_api_key(raw_key)
-    key_record=db.query(APIKey).filter_by(key_hash=hashed_key).first() #------------------------------------------
+    key_record=db.query(APIKey).filter_by(key_hash=hashed_key).first()
     current_date_time=datetime.now(timezone.utc)
     if not key_record:
         raise AuthError("Invalid Key or No key match found")  #Invalid Key"

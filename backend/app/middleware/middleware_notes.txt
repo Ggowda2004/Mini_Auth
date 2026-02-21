@@ -1,0 +1,22 @@
+#Your middleware’s job: Automatically authenticate every request before it reaches routes.
+
+In a FastAPI project, middleware acts as a bridge that processes every request before it reaches your path operation and every response before it leaves the server. 
+
+
+Most Used Middleware in Projects
+CORS (Cross-Origin Resource Sharing): Managing which domains can access your API.**
+Structured Logging: Globally recording request methods, paths, status codes, and execution times.**
+Authentication & Authorization: Decoding JWT tokens or verifying API keys before requests reach your endpoints.**
+Rate Limiting: Restricting the number of requests per IP address to prevent abuse (e.g., using SlowAPI).**
+
+GZip Compression: Compressing large response payloads (like big JSON datasets) to save bandwidth.
+Trusted Host Protection: Validating the Host header to prevent HTTP Host Header attacks.
+HTTPS Redirect: Automatically redirecting all http traffic to https for security.
+Execution Timing: Measuring and adding X-Process-Time headers to track API performance.
+Request ID Injection: Adding a unique X-Request-ID to headers for distributed tracing and better debugging.
+Security Header Injection: Setting standard headers like X-Frame-Options and Content-Security-Policy.
+Sentry/Error Monitoring: Catching and reporting unhandled exceptions globally to monitoring services.
+Prometheus Instrumentation: Exposing request counts and latency metrics for monitoring tools.
+Session Management: Handling signed cookie-based user sessions.
+Proxy Headers: Correctly identifying the real client IP when running behind proxies like Nginx or Cloudflare.
+Database Session Management: Opening and automatically closing database connections for every request cycle

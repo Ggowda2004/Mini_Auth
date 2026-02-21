@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Generator
-from app.core.config import Settings
+from app.core.config import settings
 
-db_url=Settings.database_url
+db_url=settings.database_url
 
 engine = create_engine(db_url)
 SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
