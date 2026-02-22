@@ -20,3 +20,33 @@ Prometheus Instrumentation: Exposing request counts and latency metrics for moni
 Session Management: Handling signed cookie-based user sessions.
 Proxy Headers: Correctly identifying the real client IP when running behind proxies like Nginx or Cloudflare.
 Database Session Management: Opening and automatically closing database connections for every request cycle
+
+
+👉 This is NOT middleware
+👉 This is an authentication dependency
+That’s called:
+
+unified authentication dependency
+
+Very professional design.
+
+Why separate dependencies/ folder
+
+Because dependencies handle:
+
+auth
+permissions
+DB session injection
+rate limiting checks
+role checks
+
+They are reusable components.
+
+
+Simple Rule (remember forever)
+automatic request interception → middleware
+route-injected logic → dependency
+
+You built the second.
+
+If you have to choose a primary architecture, Route-Injected Dependencies are generally "better" for modern auth because they provide better type safety and context.
