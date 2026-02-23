@@ -3,7 +3,7 @@ from app.schemas.login_user import LoginUser
 from app.core.exceptions import AuthError
 from app.db.models.user import User
 from sqlalchemy.orm import Session
-from backend.app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token
 
 def auth_service_register_user(db:Session,user_data:CreateUser):
     email = user_data.email

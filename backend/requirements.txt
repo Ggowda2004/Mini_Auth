@@ -5,3 +5,8 @@ python-jose[cryptography]
 passlib[context]
 passlib
 sqlalchemy
+alembic
+psycopg2-binary
+pydantic[email]
+"bcrypt==4.0.1"
+python-multipart

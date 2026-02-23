@@ -1,46 +1,46 @@
-from fastapi import Request, Depends #Only Request gives access to headers.
+from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
+from sqlalchemy.orm import Session
+
 from app.core.security import verify_access_token
 from app.core.exceptions import AuthError
-from sqlalchemy.orm import Session
 from app.db.models.user import User
-from app.services.api_key_service import validate_api_key
 from app.db.session import get_db
 
-def validate_token(token:str,db:Session):
+# 1. Define Security Schemes (This makes the Green Lock/Authorize button appear)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth_f/v1/auth/login", auto_error=False)
+api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+
+def validate_token(token: str, db: Session):
     try:
-        payload=verify_access_token(token)
-        user_id=payload.get("sub")
-
+        payload = verify_access_token(token)
+        user_id = payload.get("sub")
         if not user_id:
-            raise AuthError("No user found")
-        user=db.query(User).filter_by(id=user_id).first()
+            raise AuthError("No user ID in token")
+        
+        user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise AuthError("No user found")
+            raise AuthError("User not found")
         return user
-    except Exception as e:
-        raise AuthError("unexpected JWT error")
-    
-def validate_key(db:Session,api_key:str):
-    user= validate_api_key(db,api_key)
-    if not user:
-        raise AuthError("Invalid API key")
-    return user
+    except Exception:
+        raise AuthError("Invalid or expired JWT")
 
-#Request → class ❌
-# request → instance ✅
-def get_current_user(request:Request, db:Session = Depends(get_db)):
-    
-    auth_header=request.headers.get("Authorization")
-    api_key=request.headers.get("x-api-key")
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split(" ")[1]
+def get_current_user(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),   # FastAPI automatically looks for 'Authorization: Bearer ...'
+    api_key: str = Depends(api_key_header) # FastAPI automatically looks for 'x-api-key' in headers
+):
+    # Check JWT Token first
+    if token:
         return validate_token(token, db)
     
+    # Check API Key second
     if api_key:
-        return validate_key(db, api_key )
+        from app.services.api_key_service import validate_api_key
+        user = validate_api_key(db, api_key)
+        if not user:
+            raise AuthError("Invalid API key")
+        return user
     
-    if not api_key and not auth_header:
-        raise AuthError("No authentication credentials provided")
-    
-    raise AuthError("No valid authentication credentials provided")
-
+    # Neither provided
+    raise AuthError("No authentication credentials provided")

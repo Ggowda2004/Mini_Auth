@@ -22,11 +22,11 @@ def create_access_token(data:dict):
     to_encode=data.copy()
     expiry=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expiry_minutes)
     to_encode.update({"exp":expiry})
-    return jwt.encode(payload=to_encode,key=settings.jwt_secret_key,algorithm=ALGORITHM)
+    return jwt.encode(to_encode,settings.jwt_secret_key,ALGORITHM)
 
 def verify_access_token(token):
     try:
-        payload=jwt.decode(token,key=settings.jwt_secret_key,algorithms=[ALGORITHM])
+        payload=jwt.decode(token,settings.jwt_secret_key,[ALGORITHM])
         return payload#decode automatically verifies expiry time
     except ExpiredSignatureError:
         raise  AuthError("The token is expired")

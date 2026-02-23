@@ -15,18 +15,18 @@ from sqlalchemy import select
 import uuid
 from app.core.exceptions import AuthError
 
-router=APIRouter(
+router1=APIRouter(
     prefix="/api-keys",
     tags=["Api_key_usage"]
 )
 
-@router.post("/",status_code=status.HTTP_201_CREATED)
+@router1.post("/",status_code=status.HTTP_201_CREATED)
 def create_key(api_name:MakeAPIKey,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
     user_id=current_user.id
     key_details=store_api_key(db,api_name,user_id)
     return key_details
 
-@router.get("/",status_code=status.HTTP_200_OK)
+@router1.get("/",status_code=status.HTTP_200_OK)
 def list_keys(db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
     key=select(APIKey).where(APIKey.user_id==current_user.id)
     api_keys=db.scalars(key).all()
@@ -35,7 +35,7 @@ def list_keys(db:Session=Depends(get_db),current_user:User=Depends(get_current_u
     return api_keys
 
 
-@router.delete("/{key_id}",status_code=status.HTTP_204_NO_CONTENT)
+@router1.delete("/{key_id}",status_code=status.HTTP_204_NO_CONTENT)
 def delete_key(key_id:uuid.UUID,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
     try:
         return revoke_api_key(db,key_id,current_user.id)
