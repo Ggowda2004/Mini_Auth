@@ -28,13 +28,14 @@ from app.schemas.login_user import LoginUser
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.dependencies.auth_dependency import get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
-router=APIRouter(
+router2=APIRouter(
     prefix="/auth",
     tags=["Authentication"]
 )
 
-@router.post("/register",summary="Register the user",status_code=status.HTTP_200_OK)
+@router2.post("/register",summary="Register the user",status_code=status.HTTP_200_OK)
 def register_user(user_data:CreateUser,db:Session=Depends(get_db)):
     try:
         new_user=auth_service_register_user(db,user_data)
@@ -47,16 +48,17 @@ def register_user(user_data:CreateUser,db:Session=Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
 
-@router.post("/login",status_code=status.HTTP_200_OK)
-def login_user(user_data:LoginUser, db:Session=Depends(get_db)):
+@router2.post("/login",status_code=status.HTTP_200_OK)
+def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db:Session=Depends(get_db)):
     try:
-        token=auth_service_login_user(db,user_data)
-        return token
+        user_data=LoginUser(email=form_data.username,password=form_data.password)
+        token_data=auth_service_login_user(db,user_data)
+        return token_data
     except AuthError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid credentials")
     
 
-@router.get("/me",status_code=status.HTTP_200_OK)
+@router2.get("/me")
 def verify_me(current_user:User = Depends(get_current_user)):
     '''What happens: When a request hits this route, FastAPI automatically runs your get_current_user logic. If the token is invalid, it throws an error before even touching your function code.'''
     return {

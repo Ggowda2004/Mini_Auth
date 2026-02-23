@@ -1,5 +1,7 @@
-def AuthError(Exception):
-    pass
+class AuthError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
 
 
 '''class APIKeyError(AuthError):  # Assuming AuthError is your base exception
