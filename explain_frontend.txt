@@ -1,0 +1,222 @@
+================================================================================
+  MINI AUTH — FRONTEND EXPLANATION
+  Concepts, structure, methods, and frontend–backend connection
+================================================================================
+
+1. IDEOLOGY & PURPOSE
+--------------------------------------------------------------------------------
+The frontend is a minimal MVP (Minimum Viable Product) for the Mini Auth
+backend. It mirrors a small-scale “Clerk-like” auth experience:
+
+  • Users can register (email + password) and sign in.
+  • After login, a JWT is stored in the browser and sent with every
+    protected request.
+  • The dashboard shows the current user and lets them create, list, and
+    revoke API keys.
+
+Design principles:
+  • Minimal UI: no extra features, single-purpose pages.
+  • Stateless auth: no server sessions; the backend validates the JWT (or
+    API key) on each request.
+  • Clear separation: API calls live in one module; auth state in a React
+    context; pages only handle UI and user flow.
+
+
+2. FOLDER STRUCTURE
+--------------------------------------------------------------------------------
+
+frontend/
+  index.html                 Entry HTML; mounts the React app into #root
+  package.json               Dependencies (React, React Router, Vite)
+  vite.config.js             Vite config: React plugin + dev server proxy
+  .env.example               Example env: VITE_API_URL (optional)
+  .gitignore                 Ignores node_modules, dist, .env
+
+  src/
+    main.jsx                 React entry: renders <App /> into #root *
+    App.jsx                  Router + auth wrappers (ProtectedRoute, PublicOnly)  *
+    index.css                Global styles (layout, forms, cards, buttons)
+
+    api/
+      client.js              All HTTP calls to the backend; token handling  *
+
+    context/
+      AuthContext.jsx         Auth state (user, token, signOut, setToken)  *
+
+    pages/
+      Register.jsx           Sign-up form → register + auto-login → dashboard
+      Login.jsx              Sign-in form → login → store token → dashboard
+      Dashboard.jsx          /me info + API keys: create, list, revoke
+
+Data flow in short:
+  main.jsx → App.jsx (AuthProvider + Router) → Route → Page component
+  Pages use useAuth() for user/token and api/client.js for HTTP.
+
+
+3. FILES IN DETAIL
+--------------------------------------------------------------------------------
+
+3.1  index.html
+  • Single page: one <div id="root"> and one <script type="module" src="/src/main.jsx">.
+  • Vite serves this and injects the bundled React app.
+
+3.2  src/main.jsx
+  • Imports React, ReactDOM, App, and index.css.
+  • ReactDOM.createRoot(document.getElementById('root')).render(<App />).
+  • Wraps App in <React.StrictMode> for development checks.
+
+3.3  src/App.jsx
+  • Wraps the app in <AuthProvider> so every route can use useAuth().
+  • Uses React Router: <BrowserRouter>, <Routes>, <Route>.
+  • Defines two wrapper components:
+    - ProtectedRoute: if not loading and no user → redirect to /login.
+    - PublicOnly: if not loading and user exists → redirect to /dashboard.
+  • Routes:
+    - /              → redirect to /dashboard
+    - /register      → PublicOnly → Register
+    - /login         → PublicOnly → Login
+    - /dashboard     → ProtectedRoute → Dashboard
+    - *              → redirect to /dashboard
+
+3.4  src/context/AuthContext.jsx
+  • createContext(null): shared auth state for the tree.
+  • AuthProvider:
+    - State: user (object or null), loading (boolean).
+    - On mount: if localStorage has access_token, calls getMe() and sets user;
+      else sets user null. Either way, sets loading false.
+    - setToken(token): saves token to localStorage, then loadUser() so user is set.
+    - signOut(): removes token, sets user null.
+    - refreshUser: same as the internal loadUser (e.g. for re-fetching /me).
+  • useAuth(): returns { user, loading, signOut, setToken, refreshUser };
+    throws if used outside AuthProvider.
+
+3.5  src/api/client.js
+  • BASE = import.meta.env.VITE_API_URL || ''.
+    With Vite proxy (see below), BASE is '' so requests go to same origin and
+    are proxied to the backend.
+  • getToken(): returns localStorage.getItem('access_token').
+  • All functions that call protected endpoints send:
+    Authorization: Bearer <token>
+  • Exported functions and what they do:
+    - register(email, password)   → POST JSON to /auth_f/v1/auth/register
+    - login(email, password)      → POST form body to /auth_f/v1/auth/login
+    - getMe()                     → GET /auth_f/v1/auth/me with Bearer token
+    - listApiKeys()               → GET /api_f/v1/api-keys/ with Bearer token
+    - createApiKey(name)          → POST JSON to /api_f/v1/api-keys/ with Bearer
+    - revokeApiKey(keyId)         → DELETE /api_f/v1/api-keys/{keyId} with Bearer
+  • Errors: res.json().catch(() => ({})), then if !res.ok throw new Error(detail).
+
+3.6  src/pages/Register.jsx
+  • Form: email, password (with hint: min 8 chars, letter + number).
+  • handleSubmit: register(email, password) then login(email, password);
+    setToken(access_token); navigate('/dashboard', { replace: true }).
+  • On error: setError(err.message). Links to /login.
+
+3.7  src/pages/Login.jsx
+  • Form: email, password.
+  • handleSubmit: login(email, password); setToken(access_token);
+    navigate('/dashboard', { replace: true }).
+  • On error: setError(err.message). Links to /register.
+
+3.8  src/pages/Dashboard.jsx
+  • useAuth(): user, signOut, refreshUser (refreshUser imported but not used in MVP).
+  • State: keys, loading, keyName, creating, createdKey, error.
+  • useEffect(..., []): on mount, listApiKeys() and set keys (and error/loading);
+    cancellation flag to avoid setState after unmount.
+  • handleCreateKey: validate name 6–50 chars; createApiKey(name); set createdKey
+    (so raw_key is shown once); re-fetch listApiKeys and set keys.
+  • handleRevoke: confirm; revokeApiKey(keyId); filter out key from local state.
+  • UI: user email (and “Admin” if user.role); Sign out; create-key form; one-time
+    created key display; list of keys with Revoke (or “Revoked” if revoked).
+
+3.9  vite.config.js
+  • plugins: [react()].
+  • server.port: 5173.
+  • server.proxy: requests to /api_f and /auth_f are forwarded to
+    http://localhost:8000. So in dev, the frontend talks to the same origin
+    (localhost:5173), and Vite proxies to the backend (localhost:8000). This
+    avoids CORS in development; the backend still has CORS for 5173 if you
+    use VITE_API_URL to point directly at the API.
+
+3.10  index.css
+  • Global styles: layout (.page, .card), forms (.form-group, input, :focus),
+    buttons (.btn, .btn-primary, .btn-secondary, .btn-danger), links, errors,
+    dashboard header, API key list, key-created box. Minimal, no design system.
+
+
+4. CONNECTING FRONTEND AND BACKEND
+--------------------------------------------------------------------------------
+
+4.1  Base URL and proxy
+  • Development: Leave VITE_API_URL unset (or empty). Then BASE is '' and
+    fetch('/auth_f/v1/...') goes to the Vite dev server (port 5173). Vite
+    proxies /auth_f and /api_f to http://localhost:8000, so the backend
+    receives the request.
+  • Production (or if frontend is on another origin): Set VITE_API_URL to the
+    full backend URL (e.g. https://api.example.com). Then all requests go
+    directly to that host. The backend must allow that origin in CORS
+    (already allows http://localhost:5173 and 127.0.0.1:5173).
+
+4.2  Authentication flow
+  1. Register: POST /auth_f/v1/auth/register with JSON { email, password }.
+     Backend returns e.g. { message, user_id, email }. Frontend then calls
+     login and stores the token.
+  2. Login: POST /auth_f/v1/auth/login with body
+     application/x-www-form-urlencoded: username=<email>&password=<password>
+     (OAuth2 form). Backend returns { access_token, token_type: "bearer" }.
+     Frontend saves access_token in localStorage and setToken() triggers
+     getMe() so user state is set.
+  3. Every protected request: header Authorization: Bearer <access_token>.
+     Backend validates the JWT and returns 401 with { detail } if invalid.
+  4. Sign out: frontend only removes the token and clears user; no backend call.
+
+4.3  Matching backend routes and frontend calls
+  • POST   /auth_f/v1/auth/register  ← client.register()
+  • POST   /auth_f/v1/auth/login     ← client.login()   (form body)
+  • GET    /auth_f/v1/auth/me       ← client.getMe()    (Bearer)
+  • GET    /api_f/v1/api-keys/      ← client.listApiKeys()   (Bearer)
+  • POST   /api_f/v1/api-keys/      ← client.createApiKey()  (Bearer, JSON { name })
+  • DELETE /api_f/v1/api-keys/{id}  ← client.revokeApiKey()  (Bearer)
+
+4.4  Request/response contract (summary)
+  • Register: backend expects CreateUser (email, password 8–72 chars, letter+digit).
+  • Login: backend expects form username (email), password; returns access_token.
+  • /me: returns { user_id, email, is_active, role } (role from is_superuser).
+  • List keys: returns array of { id, user_id, name, revoked, expires_at, ... }.
+  • Create key: body { name } (6–50 chars, allowed chars); returns
+    { key_id, key_name, raw_key, expiry }. raw_key is shown once in the UI.
+  • Revoke: 204 No Content on success; 404 if key not found or not owned.
+
+
+5. ENDPOINT–FRONTEND MAPPING (QUICK REFERENCE)
+--------------------------------------------------------------------------------
+
+  Backend path                      Method   Frontend function    Auth
+  -----------------------------------------------------------------------
+  /auth_f/v1/auth/register          POST     register()           no
+  /auth_f/v1/auth/login             POST     login()              no
+  /auth_f/v1/auth/me               GET      getMe()              Bearer
+  /api_f/v1/api-keys/              GET      listApiKeys()        Bearer
+  /api_f/v1/api-keys/              POST     createApiKey(name)   Bearer
+  /api_f/v1/api-keys/{key_id}      DELETE   revokeApiKey(keyId)  Bearer
+
+
+6. IMPORTANT TASKS FOR FRONT–BACKEND INTEGRATION
+--------------------------------------------------------------------------------
+  • Keep BASE correct: '' when using Vite proxy; VITE_API_URL when calling
+    backend from another origin.
+  • Login body must be application/x-www-form-urlencoded with username and
+    password (not JSON), because the backend uses OAuth2PasswordRequestForm.
+  • Send Authorization: Bearer <token> on all protected routes; handle 401
+    (e.g. clear token and redirect to login — AuthContext does this when
+    getMe() fails on app load).
+  • Register response does not include a token; the frontend must call login
+    after register to get and store the token.
+  • API key create response includes raw_key only once; the UI shows it
+    immediately and does not store it.
+  • Backend list API keys returns ORM objects (id, name, revoked, etc.);
+    no raw_key in list. Frontend uses k.id for revoke and k.revoked for display.
+
+================================================================================
+  End of document
+================================================================================
