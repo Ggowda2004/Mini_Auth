@@ -8,6 +8,7 @@ from app.db.session import engine
 from contextlib import asynccontextmanager
 from fastapi import Request
 from app.core.exceptions import AuthError
+from app.services.auth_service import redis_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,6 +18,15 @@ async def lifespan(app: FastAPI):
     # Shutdown logic (if any) goes here
 
 app = FastAPI(lifespan=lifespan)
+@app.on_event("startup")
+def type_check_redis():
+    try:
+        # Forcing an immediate connection check
+        redis_client.ping()
+        print("✅ Successfully connected to Redis")
+    except Exception as e:
+        print("❌ Redis connection failed! Starting server aborted.")
+        raise e
 
 app.add_middleware(
     CORSMiddleware,

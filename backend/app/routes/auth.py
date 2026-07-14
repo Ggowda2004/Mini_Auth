@@ -20,14 +20,14 @@ service layer → business errors"""
 # Use response_model (later — you said already)
 
 from fastapi import APIRouter, status, Depends, HTTPException
-from app.services.auth_service import auth_service_register_user, auth_service_login_user
+from app.services.auth_service import auth_service_register_user, auth_service_login_user, auth_service_logout_user
 from app.schemas.users import CreateUser
 from app.db.models.user import User
 from app.core.exceptions import AuthError
 from app.schemas.login_user import LoginUser
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.dependencies.auth_dependency import get_current_user
+from app.dependencies.auth_dependency import get_current_user, oauth2_scheme
 from fastapi.security import OAuth2PasswordRequestForm
 
 router2=APIRouter(
@@ -69,3 +69,18 @@ def verify_me(current_user:User = Depends(get_current_user)):
     }
 
 # Auth system complete → build API key routes
+
+@router2.post("/logout", status_code=status.HTTP_200_OK, summary="Logout User")
+def logout_user(token: str = Depends(oauth2_scheme)):
+    """
+    Extracts the token from the request authorization headers, 
+    passes it down to the business logic layer to blacklist it, 
+    and handles route layer HTTP exceptions.
+    """
+    try:
+        auth_service_logout_user(token)
+        return {"detail": "Successfully logged out"}
+    except AuthError as e:
+        # Converts business layer AuthError to HTTP response
+        print("😶😶😶")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

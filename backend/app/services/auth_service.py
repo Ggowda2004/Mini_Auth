@@ -58,5 +58,27 @@ def auth_service_login_user(db:Session,user_data:LoginUser):
 #-------------------------------------------------------------------------------------
 
 
+from jose import jwt, JWTError
+from datetime import datetime, timezone
+from app.core.config import settings
+import redis
 
+redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+ALGORITHM = settings.jwt_algorithm
 
+def auth_service_logout_user(token: str):
+    try:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[ALGORITHM])
+        
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        
+        if not jti or not exp:
+            raise AuthError("Invalid token format for logout")
+        now = datetime.now(timezone.utc).timestamp()
+        ttl = int(exp - now)
+
+        if ttl>0:
+            redis_client.setex(name=f"blacklist:{jti}", time=ttl, value="true")
+    except JWTError:
+        raise AuthError("Could not process token payload")

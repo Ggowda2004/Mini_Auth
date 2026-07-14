@@ -4,6 +4,8 @@ from jose import jwt, JWTError, ExpiredSignatureError
 from app.core.exceptions import AuthError
 from .config import settings
 import hashlib
+import uuid
+import redis
 
 #1 task to hash and verify password
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated='auto')
@@ -21,12 +23,21 @@ ALGORITHM=settings.jwt_algorithm
 def create_access_token(data:dict):
     to_encode=data.copy()
     expiry=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expiry_minutes)
-    to_encode.update({"exp":expiry})
+    to_encode.update({
+        "jti": str(uuid.uuid4()), #jti is jwt id, using it for logout idea
+        "exp":expiry}
+    )
     return jwt.encode(to_encode,settings.jwt_secret_key,ALGORITHM)
+
+redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+
 
 def verify_access_token(token):
     try:
         payload=jwt.decode(token,settings.jwt_secret_key,[ALGORITHM])
+        jti = payload.get("jti")
+        if jti and redis_client.get(f"blacklist:{jti}"):
+            raise AuthError("The token has been revoked/logged out")
         return payload#decode automatically verifies expiry time
     except ExpiredSignatureError:
         raise  AuthError("The token is expired")
