@@ -13,20 +13,18 @@ from app.services.auth_service import redis_client
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Create tables
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Shutdown logic (if any) goes here
+    try:
+        Base.metadata.create_all(bind=engine)
+        await redis_client.ping()
+    except Exception as e:
+        raise e
+
+    yield  # 🚀 The application runs while paused here
+
+    # --- SHUTDOWN LOGIC ---
+    await redis_client.close()
 
 app = FastAPI(lifespan=lifespan)
-@app.on_event("startup")
-def type_check_redis():
-    try:
-        # Forcing an immediate connection check
-        redis_client.ping()
-        print("✅ Successfully connected to Redis")
-    except Exception as e:
-        print("❌ Redis connection failed! Starting server aborted.")
-        raise e
 
 app.add_middleware(
     CORSMiddleware,

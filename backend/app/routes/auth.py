@@ -1,24 +1,3 @@
-# POST   /auth/register
-# POST   /auth/login
-# GET    /auth/me
-# Route should NOT talk to DB directly.
-# In FastAPI, if you return an error object, the API will still send a 200 OK status code to the client, which is misleading. You must use raise HTTPException so the browser/frontend knows something went wrong (e.g., a 400 Bad Request).
-"""AuthError should NOT be raised in routes
-
-You wrote:
-
-raise AuthError(...)
-Problem:
-
-AuthError is your internal service exception
-
-Routes should return HTTP responses
-
-FastAPI won’t automatically convert your custom error properly (unless you added handler)
-route layer → HTTP handling
-service layer → business errors"""
-# Use response_model (later — you said already)
-
 from fastapi import APIRouter, status, Depends, HTTPException
 from app.services.auth_service import auth_service_register_user, auth_service_login_user, auth_service_logout_user
 from app.schemas.users import CreateUser
@@ -81,6 +60,5 @@ def logout_user(token: str = Depends(oauth2_scheme)):
         auth_service_logout_user(token)
         return {"detail": "Successfully logged out"}
     except AuthError as e:
-        # Converts business layer AuthError to HTTP response
         print("😶😶😶")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
