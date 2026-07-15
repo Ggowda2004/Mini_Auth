@@ -15,14 +15,15 @@ async def lifespan(app: FastAPI):
     # Startup: Create tables
     try:
         Base.metadata.create_all(bind=engine)
-        await redis_client.ping()
+        redis_client.ping()
+        yield  # 🚀 The application runs while paused here
     except Exception as e:
+        print(f"Startup/Runtime error: {e}")
         raise e
 
-    yield  # 🚀 The application runs while paused here
-
     # --- SHUTDOWN LOGIC ---
-    await redis_client.close()
+    finally:
+        redis_client.close()
 
 app = FastAPI(lifespan=lifespan)
 

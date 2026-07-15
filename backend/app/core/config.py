@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     access_token_expiry_minutes:int=30
     jwt_algorithm:str='HS256'
     api_key_expiry:int=30
+    REFRESH_TOKEN_EXPIRE_DAYS:int = 7
 
     model_config=SettingsConfigDict(env_file='.env',extra='ignore')
 settings=Settings()

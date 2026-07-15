@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException
-from app.services.auth_service import auth_service_register_user, auth_service_login_user, auth_service_logout_user
+from app.services.auth_service import auth_service_register_user, auth_service_login_user, auth_service_logout_user, auth_service_refresh_token
 from app.schemas.users import CreateUser
 from app.db.models.user import User
 from app.core.exceptions import AuthError
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.dependencies.auth_dependency import get_current_user, oauth2_scheme
 from fastapi.security import OAuth2PasswordRequestForm
+from app.schemas.token import TokenRefreshRequest, LogoutRequest
 
 router2=APIRouter(
     prefix="/auth",
@@ -50,15 +51,23 @@ def verify_me(current_user:User = Depends(get_current_user)):
 # Auth system complete → build API key routes
 
 @router2.post("/logout", status_code=status.HTTP_200_OK, summary="Logout User")
-def logout_user(token: str = Depends(oauth2_scheme)):
+def logout_user(payload: LogoutRequest, token: str = Depends(oauth2_scheme)):
     """
     Extracts the token from the request authorization headers, 
     passes it down to the business logic layer to blacklist it, 
     and handles route layer HTTP exceptions.
     """
     try:
-        auth_service_logout_user(token)
-        return {"detail": "Successfully logged out"}
+        auth_service_logout_user(access_token=token, refresh_token=payload.refresh_token)
+        return {"detail": "Successfully logged out and session revoked"}
     except AuthError as e:
-        print("😶😶😶")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    
+
+# refresh token
+@router2.post("/refresh", status_code=status.HTTP_200_OK, summary="Refresh Access Token")
+def refresh_access_token(payload: TokenRefreshRequest):
+    try:
+        return auth_service_refresh_token(payload.refresh_token)
+    except AuthError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

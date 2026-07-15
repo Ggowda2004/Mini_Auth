@@ -25,11 +25,24 @@ def create_access_token(data:dict):
     expiry=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expiry_minutes)
     to_encode.update({
         "jti": str(uuid.uuid4()), #jti is jwt id, using it for logout idea
+        "type":"access",#tagging it to not be used as refresh
         "exp":expiry}
     )
-    return jwt.encode(to_encode,settings.jwt_secret_key,ALGORITHM)
+    return jwt.encode(to_encode,settings.jwt_secret_key,ALGORITHM), 
 
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+
+#new refresh token
+def create_refresh_token(data:dict):
+    to_encode=data.copy()
+    expiry = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({
+        "jti": str(uuid.uuid4()),
+        "type":"refresh",
+        "exp":expiry}
+    )
+    return jwt.encode(to_encode, settings.jwt_secret_key, ALGORITHM)
+
 
 
 def verify_access_token(token):
