@@ -108,9 +108,19 @@ def auth_service_refresh_token(refresh_token: str):
         if not user_id:
             raise AuthError("Invalid token payload")
         new_access_token = create_access_token({"sub": user_id})
+        new_refresh_token = create_refresh_token({"sub": user_id})
+
+        now = datetime.now(timezone.utc).timestamp()
+        refresh_exp = payload.get("exp")
+        if refresh_jti and refresh_exp:
+            ttl = int(refresh_exp - now)
+            if ttl > 0:
+                redis_client.setex(name=f"blacklist:{refresh_jti}", time=ttl, value="true")
+
 
         return {
             "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
     except (JWTError, ExpiredSignatureError):

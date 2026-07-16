@@ -28,7 +28,7 @@ def create_access_token(data:dict):
         "type":"access",#tagging it to not be used as refresh
         "exp":expiry}
     )
-    return jwt.encode(to_encode,settings.jwt_secret_key,ALGORITHM), 
+    return jwt.encode(to_encode, settings.jwt_secret_key,ALGORITHM)
 
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
