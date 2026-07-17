@@ -1,0 +1,3 @@
+[submodule "MCP_Auth"]
+	path = MCP_Auth
+	url = https://github.com/Ggowda2004/MCP_Auth.git
